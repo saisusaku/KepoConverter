@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KepoWeb Media Converter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800 min-h-screen flex flex-col font-sans">
+
+    <!-- Top Header -->
+    <header class="bg-white border-b border-gray-200 py-3 px-6 shadow-sm">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold text-gray-700 tracking-tight">
+                Kepo<span class="text-blue-600">Web</span> Converter <span class="text-xs font-normal text-gray-500 bg-gray-100 px-2 py-0.5 rounded border">MP4 to MP3/WAV</span>
+            </h1>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-grow max-w-4xl w-full mx-auto p-4 md:p-6 my-auto">
+        <div class="bg-white p-6 md:p-8 rounded-lg border border-gray-200 shadow-sm flex flex-col gap-6">
+            <div>
+                <h2 class="text-2xl font-normal text-gray-800">Media File Converter</h2>
+                <p class="text-sm text-gray-600 mt-1">Unggah file video Anda (MP4) dan ubah formatnya menjadi audio MP3 atau WAV dengan mudah.</p>
+            </div>
+
+            <!-- Form Upload -->
+            <div class="flex flex-col gap-4">
+                <div class="flex flex-col gap-2">
+                    <label class="text-sm font-semibold text-gray-700">Pilih File Media (MP4/Video)</label>
+                    <div class="flex items-center border border-gray-300 rounded bg-gray-50 overflow-hidden text-sm">
+                        <label class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-3 cursor-pointer border-r border-gray-300 text-xs font-medium">
+                            Browse...
+                            <input type="file" id="media-file" accept="video/*" onchange="handleFileSelect(event)" class="hidden">
+                        </label>
+                        <span id="file-name" class="px-3 text-gray-500 text-xs truncate">Tidak ada file dipilih.</span>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <label class="text-sm font-semibold text-gray-700">Format Target Output</label>
+                    <select id="target-format" class="border border-gray-300 rounded p-2.5 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        <option value="mp3">MP3 (Audio)</option>
+                        <option value="wav">WAV (High Quality Audio)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Action Button -->
+            <div>
+                <button onclick="startConversion()" id="submit-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded text-sm font-medium shadow-sm transition">
+                    Mulai Konversi
+                </button>
+            </div>
+
+            <!-- Loading Indicator -->
+            <div id="loading-box" class="hidden text-center py-3 text-sm text-blue-600 font-medium animate-pulse">
+                ⏳ Sedang memproses file media Anda, mohon tunggu...
+            </div>
+
+            <!-- Result Box -->
+            <div id="result-box" class="hidden flex flex-col gap-2 p-4 bg-green-50 border border-green-200 rounded text-sm">
+                <span class="font-semibold text-green-700">Konversi Berhasil!</span>
+                <a id="download-link" href="#" class="inline-block bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-xs font-medium text-center w-max transition">
+                    📥 Unduh File Hasil
+                </a>
+            </div>
+
+            <!-- Alert Box -->
+            <div id="alert-box" class="hidden p-3 rounded text-sm border bg-red-50 border-red-200 text-red-600"></div>
+        </div>
+    </main>
+
+    <script>
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                document.getElementById('file-name').innerText = file.name;
+            }
+        }
+
+        async function startConversion() {
+            const fileInput = document.getElementById('media-file');
+            const targetFormat = document.getElementById('target-format').value;
+            const alertBox = document.getElementById('alert-box');
+            const loadingBox = document.getElementById('loading-box');
+            const resultBox = document.getElementById('result-box');
+
+            alertBox.classList.add('hidden');
+            resultBox.classList.add('hidden');
+
+            if (fileInput.files.length === 0) {
+                alertBox.innerText = "Silakan pilih file video terlebih dahulu.";
+                alertBox.classList.remove('hidden');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            formData.append('format', targetFormat);
+
+            loadingBox.classList.remove('hidden');
+
+            try {
+                const response = await fetch('/convert', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                loadingBox.classList.add('hidden');
+
+                if (data.status === 'success') {
+                    const downloadLink = document.getElementById('download-link');
+                    downloadLink.href = data.download_url;
+                    downloadLink.innerText = `📥 Unduh ${data.filename}`;
+                    resultBox.classList.remove('hidden');
+                } else {
+                    alertBox.innerText = data.message;
+                    alertBox.classList.remove('hidden');
+                }
+            } catch (err) {
+                loadingBox.classList.add('hidden');
+                alertBox.innerText = "Terjadi kesalahan pada server.";
+                alertBox.classList.remove('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
